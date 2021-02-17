@@ -1,9 +1,8 @@
-{% include "header.html" %}
 {% extends 'bootstrap/base.html' %}
 {% import "bootstrap/wtf.html" as wtf %}
 
 {% block content %}
-
+{% include "header.html" %}
   <!-- Page Header -->
   <header class="masthead" style="background-image: url('{{ url_for('static', filename='img/edit-bg.jpg')}}')">
     <div class="overlay"></div>
@@ -33,6 +32,5 @@
     </div>
   </div>
 
-
-{% endblock %}
 {% include "footer.html" %}
+{% endblock %}
