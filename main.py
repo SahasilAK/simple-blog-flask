@@ -10,7 +10,7 @@ from flask_login import UserMixin, login_user, LoginManager, login_required, cur
 from forms import LoginForm, RegisterForm, CreatePostForm, CommentForm
 from flask_gravatar import Gravatar
 import os
-
+from datetime import datetime
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
@@ -29,6 +29,9 @@ login_manager.init_app(app)
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+@login_manager.unauthorized_handler
+def unauthorized_callback():
+    return redirect('/login?next=' + request.path)
 
 
 ##CONFIGURE TABLE
@@ -78,7 +81,8 @@ def admin_only(f):
 @app.route('/')
 def get_all_posts():
     posts = BlogPost.query.all()
-    return render_template("index.html", all_posts=posts, current_user=current_user)
+    current_year = datetime.now().year
+    return render_template("index.html", all_posts=posts, current_user=current_user, year=current_year)
 
 
 @app.route('/register', methods=["GET", "POST"])
@@ -213,18 +217,20 @@ def edit_post(post_id):
 
         return render_template("make-post.html", form=edit_form, is_edit=True, current_user=current_user)
     flash("Sorry it seems you are not the author of this post.")
-    return redirect(url_for("home"))
+    return redirect(url_for("get_all_posts"))
 
 
 
 @app.route("/delete/<int:post_id>")
-@admin_only
 @login_required
 def delete_post(post_id):
-    post_to_delete = BlogPost.query.get(post_id)
-    db.session.delete(post_to_delete)
-    db.session.commit()
-    return redirect(url_for('get_all_posts'))
+    if current_user.id == post.author.id:
+        post_to_delete = BlogPost.query.get(post_id)
+        db.session.delete(post_to_delete)
+        db.session.commit()
+        return redirect(url_for('get_all_posts'))
+    flash("Sorry it seems you are not the author of this post.")
+    return redirect(url_for("get_all_posts"))
 
 
 if __name__ == "__main__":
