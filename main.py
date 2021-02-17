@@ -11,6 +11,10 @@ from forms import LoginForm, RegisterForm, CreatePostForm, CommentForm
 from flask_gravatar import Gravatar
 import os
 from datetime import datetime
+import smtplib
+
+OWN_EMAIL = os.environ.get("CONTACT_MAIL")
+OWN_PASSWORD = os.environ.get("CONTACT_PASSWORD")
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
@@ -168,9 +172,14 @@ def about():
     return render_template("about.html", current_user=current_user)
 
 
-@app.route("/contact")
+@app.route("/contact", methods=["GET","POST"])
 def contact():
-    return render_template("contact.html", current_user=current_user)
+    if request.method == "POST":
+        data = request.form
+        send_mail(data["name"], data["email"], data["phone"], data["message"])
+        return render_template("contact.html", current_user=current_user, msg_sent=True)
+
+    return render_template("contact.html", current_user=current_user, msg_sent=False)
 
 
 @app.route("/new-post", methods=["GET", "POST"])
@@ -231,8 +240,15 @@ def delete_post(post_id):
         db.session.delete(post_to_delete)
         db.session.commit()
         return redirect(url_for('get_all_posts'))
-    
+
     return redirect(url_for("get_all_posts"))
+
+def send_email(name, email, phone, message):
+    email_message = f"Subject:New Message\n\nName: {name}\nEmail: {email}\nPhone: {phone}\nMessage:{message}"
+    with smtplib.SMTP("smtp.gmail.com") as connection:
+        connection.starttls()
+        connection.login(OWN_EMAIL, OWN_PASSWORD)
+        connection.sendmail(OWN_EMAIL, OWN_EMAIL, email_message)
 
 
 if __name__ == "__main__":
